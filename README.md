@@ -22,4 +22,4 @@
 ## Models
 1. STGNN <https://github.com/LMissher/STGNN>
 2. STWave <https://github.com/LMissher/STWave>
-3. PatchSTG <ihttps://github.com/LMissher/PatchSTG>
+3. PatchSTG <https://github.com/LMissher/PatchSTG>
