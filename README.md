@@ -1,4 +1,18 @@
-# Predicting the DFE
+# Predicting the Distribution of Finess Effects
+
+In a Wright-Fisher model, with selection, we would prefer to model the _selection coefficient_
+as a distribution (compared to a constant, for example). These require estimation, and this 
+project attempts to provide a Machine Learning (specifically Deep Learning) approach to
+estimating this distribution in a more computationally-friendly way.
+
+Other projects include:
+1. PolyDFE, for _natural populations_.
+   <https://github.com/paula-tataru/polyDFE>
+
+3. Bait-ER, for _Evolve & Resequence_ experiments.
+   <https://github.com/mrborges23/Bait-ER>
+
+---------------------------------------------------------------------------------------------
 
 ## To do
 - [ ] Get SLiM data
