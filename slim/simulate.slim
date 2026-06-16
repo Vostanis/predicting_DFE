@@ -1,0 +1,222 @@
+// Source: <https://github.com/Swayamsethi123/Dissertation/blob/main/slim/Script_Local.slim>
+
+// Fitness Landscape
+
+initialize() {
+	// Calls
+	initializeSLiMOptions(keepPedigrees=T);
+	initializeSex("A");
+	
+	// Constants
+	if (!exists("Seed"))
+		defineConstant("Seed", 65755);
+	defineConstant("NTargets", 10000);
+	defineConstant("Sep", 0);
+
+	// NEW: how many genomes initially receive each neutral marker
+	defineConstant("MarkerCopies", 10);
+
+	// Genome elements
+	defineConstant("L", 23513712);
+	setSeed(asInteger(Seed));
+	initializeMutationRate(0);
+	
+	initializeMutationType("m1", 0.5, "f", 0.0);   // selected mutations; coeff set later
+	initializeMutationType("m2", 0.5, "f", 0.0);   // ancestry markers
+	m2.convertToSubstitution = F;
+	
+	initializeGenomicElementType("g1", m2, 1);
+	initializeGenomicElement(g1, 0, L - 1);
+	
+	// Recombination map
+	map   = readCSV("./data/chr2L.txt", c("ends", "rates"), sep=",");
+	ends  = map.getValue("ends");
+	ends  = c(ends[1:(size(ends)-1)] - 2, L - 1);
+	rates = map.getValue("rates") * 1e-8;
+	initializeRecombinationRate(rates, ends);
+}
+
+1 early() {
+	defineConstant("Final", "Test");
+	
+	// Subpopulations
+	sim.addSubpop("p0", 50);
+	sim.addSubpop("p1", 50);
+}
+
+1 late() {
+	// SNP Positions
+	poly = readCSV("./data/df_AD_Targets.csv", c("pos_poly")).asMatrix();
+	targetPos = sort(sample(poly, asInteger(NTargets)));
+	
+	// Coefficients from Python-generated file
+	targets = readFile("./data/s_per_locus.csv");
+	targets = asFloat(targets);
+
+	catn("Length of targets = " + size(targets));
+
+	defineConstant("SCoefList", targets);
+
+	if (size(SCoefList) != asInteger(NTargets))
+		stop("Length of targets must equal NTargets. Got " + size(SCoefList));
+		
+	// NEW: selected mutations start at low frequency
+	defineConstant("SelCopies", 2);   // try 1 first; if too weak, use 2
+
+	if (asInteger(NTargets) == 0)
+	{
+		file = "NTargets\n";
+	}
+	else
+	{
+		if (asInteger(Sep) == 0)
+		{
+			// All selected mutations start in p1 at low initial frequency
+			for (i in seqAlong(targetPos))
+			{
+				gs = sample(p1.haplosomes, asInteger(SelCopies), replace=F);
+				muts = gs.addNewDrawnMutation(m1, targetPos[i]);
+				for (m in muts)
+					m.setSelectionCoeff(SCoefList[i]);
+			}
+			
+			file = paste0("NTargets\n\n", asString(targetPos), "\n");
+		}
+		else if (asInteger(NTargets) == asInteger(Sep))
+		{
+			// All selected mutations start in p0 at low initial frequency
+			for (i in seqAlong(targetPos))
+			{
+				gs = sample(p0.genomes, asInteger(SelCopies), replace=F);
+				muts = gs.addNewDrawnMutation(m1, targetPos[i]);
+				for (m in muts)
+					m.setSelectionCoeff(SCoefList[i]);
+			}
+			
+			file = paste0("NTargets\n", asString(targetPos), "\n\n");
+		}
+		else
+		{
+			// Split selected mutations between p0 and p1 at low initial frequency
+			p0_pos  = targetPos[0:(asInteger(Sep)-1)];
+			p1_pos  = targetPos[asInteger(Sep):(asInteger(NTargets)-1)];
+			
+			p0_coef = SCoefList[0:(asInteger(Sep)-1)];
+			p1_coef = SCoefList[asInteger(Sep):(asInteger(NTargets)-1)];
+			
+			for (i in seqAlong(p0_pos))
+			{
+				gs = sample(p0.genomes, asInteger(SelCopies), replace=F);
+				muts = gs.addNewDrawnMutation(m1, p0_pos[i]);
+				for (m in muts)
+					m.setSelectionCoeff(p0_coef[i]);
+			}
+			
+			for (i in seqAlong(p1_pos))
+			{
+				gs = sample(p1.genomes, asInteger(SelCopies), replace=F);
+				muts = gs.addNewDrawnMutation(m1, p1_pos[i]);
+				for (m in muts)
+					m.setSelectionCoeff(p1_coef[i]);
+			}
+			
+			file = paste0("NTargets\n",
+				asString(p0_pos), "\n\n",
+				asString(p1_pos), "\n");
+		}
+	}
+	
+	// OUTPUT
+	outname = paste0("./", Seed, "-", NTargets, "-", Sep, "_Targets.txt");
+	
+	if (!writeFile(outname, file))
+		stop("Error writing file.");
+}
+
+// Randomize sex rate
+1:3 early() {
+	p0.setSexRatio(runif(1, 0.45, 0.55));
+	p1.setSexRatio(runif(1, 0.45, 0.55));
+}
+
+4 late() {
+	// Add ancestry-marker mutations to p1 at moderate frequency, not all genomes
+	muts = readCSV("./data/df_AD_Targets.csv", c("pos_poly")).asMatrix();
+
+	// First half
+	for (i in 0:4999)
+	{
+		gs = sample(p1.haplosomes, asInteger(MarkerCopies), replace=F);
+		gs.addNewDrawnMutation(m2, muts[i]);
+	}
+
+	// Second half (note 5000, not 5001, so no skipped index)
+	for (i in 5000:9999)
+	{
+		gs = sample(p1.haplosomes, asInteger(MarkerCopies), replace=F);
+		gs.addNewDrawnMutation(m2, muts[i]);
+	}
+
+	catn("Inserted ancestry markers into p1.");
+}
+
+9 early() {
+	sim.addSubpop("p10", 100);
+	p10.setMigrationRates(c(p0, p1), c(0.5, 0.5));
+}
+
+// Admixture
+10 early() {
+	p10.setMigrationRates(c(p0, p1), c(0.0, 0.0));
+	p10.setSexRatio(runif(1, 0.45, 0.55));
+	
+	// Remove source populations
+	p0.setSubpopulationSize(0);
+	p1.setSubpopulationSize(0);
+}
+
+// Randomize sex freqs and output ancestry-marker counts
+10: late() {
+	p10.setSexRatio(runif(1, 0.45, 0.55));
+	
+	// Output at cycles 50 and 70
+	if (sim.cycle == 50 | sim.cycle == 70)
+	{
+		// Sample genomes from p10
+		p10g = p10.haplosomes;
+
+		// Marker positions to check
+		muts = readCSV("./data/df_AD_Targets.csv", c("pos_poly"));
+		allPos = muts.getValue("pos_poly");
+
+		p1Counts = integer(length(allPos));
+
+		// Robust counting: for each genome, find which marker positions are present
+		for (g in p10g)
+		{
+			pos = g.positionsOfMutationsOfType(m2);
+
+			if (size(pos) > 0)
+			{
+				for (p in pos)
+				{
+					idx = which(allPos == p);
+					if (size(idx) > 0)
+						p1Counts[idx] = p1Counts[idx] + 1;
+				}
+			}
+		}
+
+		catn("Cycle " + sim.cycle + " | total m2 copies counted = " + sum(p1Counts));
+
+		// WRITE TXT FILE
+		file = paste0("Frequency_" + sim.cycle + "\n", asString(p1Counts) + "\n");
+		if (!writeFile("./" + Seed + "-" + NTargets + "-" + Sep + "-" + "_Cycle_" + sim.cycle + ".txt", file))
+			stop("Error writing file.");
+	}
+}
+
+// Save file and end
+80 early() {
+	sim.simulationFinished();
+}
