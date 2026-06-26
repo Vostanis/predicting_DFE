@@ -14,6 +14,7 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
+            messer-slim
             (pkgs.python313.withPackages
               (ps: with ps; [
                 pandas
@@ -24,9 +25,9 @@
                 torch
                 timm
                 tqdm
-
                 jupyterlab
                 ipykernel
+                plotext
               ]))
           ];
 

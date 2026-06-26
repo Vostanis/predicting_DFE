@@ -10,7 +10,7 @@ initialize() {
 	// Constants
 	if (!exists("Seed"))
 		defineConstant("Seed", 65755);
-	defineConstant("NTargets", 10000);
+	defineConstant("NTargets", 70000);
 	defineConstant("Sep", 0);
 
 	// NEW: how many genomes initially receive each neutral marker
@@ -29,7 +29,7 @@ initialize() {
 	initializeGenomicElement(g1, 0, L - 1);
 	
 	// Recombination map
-	map   = readCSV("./data/chr2L.txt", c("ends", "rates"), sep=",");
+	map   = readCSV("./slim/inputs/recombination_mapping_chromosome_2L.txt", c("ends", "rates"), sep=",");
 	ends  = map.getValue("ends");
 	ends  = c(ends[1:(size(ends)-1)] - 2, L - 1);
 	rates = map.getValue("rates") * 1e-8;
@@ -40,17 +40,17 @@ initialize() {
 	defineConstant("Final", "Test");
 	
 	// Subpopulations
-	sim.addSubpop("p0", 50);
-	sim.addSubpop("p1", 50);
+	sim.addSubpop("p0", 500);
+	sim.addSubpop("p1", 500);
 }
 
 1 late() {
 	// SNP Positions
-	poly = readCSV("./data/df_AD_Targets.csv", c("pos_poly")).asMatrix();
+	poly = readCSV("./slim/inputs/admixture_mapping_targets.csv", c("pos_poly")).asMatrix();
 	targetPos = sort(sample(poly, asInteger(NTargets)));
 	
 	// Coefficients from Python-generated file
-	targets = readFile("./data/s_per_locus.csv");
+	targets = readFile("./slim/inputs/gamma_distributed_sample.csv");
 	targets = asFloat(targets);
 
 	catn("Length of targets = " + size(targets));
@@ -127,7 +127,7 @@ initialize() {
 	}
 	
 	// OUTPUT
-	outname = paste0("./", Seed, "-", NTargets, "-", Sep, "_Targets.txt");
+	outname = paste0("./slim/outputs/", Seed, "-", NTargets, "-", Sep, "_Targets.txt");
 	
 	if (!writeFile(outname, file))
 		stop("Error writing file.");
@@ -141,7 +141,7 @@ initialize() {
 
 4 late() {
 	// Add ancestry-marker mutations to p1 at moderate frequency, not all genomes
-	muts = readCSV("./data/df_AD_Targets.csv", c("pos_poly")).asMatrix();
+	muts = readCSV("./slim/inputs/admixture_mapping_targets.csv", c("pos_poly")).asMatrix();
 
 	// First half
 	for (i in 0:4999)
@@ -179,14 +179,14 @@ initialize() {
 10: late() {
 	p10.setSexRatio(runif(1, 0.45, 0.55));
 	
-	// Output at cycles 50 and 70
-	if (sim.cycle == 50 | sim.cycle == 70)
+	// Output all cycles
+	if (sim.cycle == 0 |sim.cycle == 10 |sim.cycle == 20 |sim.cycle == 30 |sim.cycle == 40 |sim.cycle == 50 | sim.cycle == 60)
 	{
 		// Sample genomes from p10
 		p10g = p10.haplosomes;
 
 		// Marker positions to check
-		muts = readCSV("./data/df_AD_Targets.csv", c("pos_poly"));
+		muts = readCSV("./slim/inputs/admixture_mapping_targets.csv", c("pos_poly"));
 		allPos = muts.getValue("pos_poly");
 
 		p1Counts = integer(length(allPos));
@@ -211,7 +211,7 @@ initialize() {
 
 		// WRITE TXT FILE
 		file = paste0("Frequency_" + sim.cycle + "\n", asString(p1Counts) + "\n");
-		if (!writeFile("./" + Seed + "-" + NTargets + "-" + Sep + "-" + "_Cycle_" + sim.cycle + ".txt", file))
+		if (!writeFile("./slim/outputs/" + Seed + "-" + NTargets + "-" + Sep + "-" + "_Cycle_" + sim.cycle + ".txt", file))
 			stop("Error writing file.");
 	}
 }
