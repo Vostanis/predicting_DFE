@@ -29,7 +29,7 @@ initialize() {
 	initializeGenomicElement(g1, 0, L - 1);
 	
 	// Recombination map
-	map   = readCSV("./slim/inputs/recombination_mapping_chromosome_2L.txt", c("ends", "rates"), sep=",");
+	map   = readCSV("../slim/inputs/recombination_mapping_chromosome_2L.txt", c("ends", "rates"), sep=",");
 	ends  = map.getValue("ends");
 	ends  = c(ends[1:(size(ends)-1)] - 2, L - 1);
 	rates = map.getValue("rates") * 1e-8;
@@ -46,11 +46,11 @@ initialize() {
 
 1 late() {
 	// SNP Positions
-	poly = readCSV("./slim/inputs/admixture_mapping_targets.csv", c("pos_poly")).asMatrix();
+	poly = readCSV("../slim/inputs/admixture_mapping_targets.csv", c("pos_poly")).asMatrix();
 	targetPos = sort(sample(poly, asInteger(NTargets)));
 	
 	// Coefficients from Python-generated file
-	targets = readFile("./slim/inputs/gamma_distributed_sample.csv");
+	targets = readFile("../slim/inputs/gamma_distributed_sample.csv");
 	targets = asFloat(targets);
 
 	catn("Length of targets = " + size(targets));
@@ -127,7 +127,7 @@ initialize() {
 	}
 	
 	// OUTPUT
-	outname = paste0("./slim/outputs/", Seed, "-", NTargets, "-", Sep, "_Targets.txt");
+	outname = paste0("../slim/outputs/", Seed, "-", NTargets, "-", Sep, "_Targets.txt");
 	
 	if (!writeFile(outname, file))
 		stop("Error writing file.");
@@ -141,7 +141,7 @@ initialize() {
 
 4 late() {
 	// Add ancestry-marker mutations to p1 at moderate frequency, not all genomes
-	muts = readCSV("./slim/inputs/admixture_mapping_targets.csv", c("pos_poly")).asMatrix();
+	muts = readCSV("../slim/inputs/admixture_mapping_targets.csv", c("pos_poly")).asMatrix();
 
 	// First half
 	for (i in 0:4999)
@@ -161,7 +161,7 @@ initialize() {
 }
 
 9 early() {
-	sim.addSubpop("p10", 100);
+	sim.addSubpop("p10", 1000);
 	p10.setMigrationRates(c(p0, p1), c(0.5, 0.5));
 }
 
@@ -186,7 +186,7 @@ initialize() {
 		p10g = p10.haplosomes;
 
 		// Marker positions to check
-		muts = readCSV("./slim/inputs/admixture_mapping_targets.csv", c("pos_poly"));
+		muts = readCSV("../slim/inputs/admixture_mapping_targets.csv", c("pos_poly"));
 		allPos = muts.getValue("pos_poly");
 
 		p1Counts = integer(length(allPos));
@@ -211,7 +211,7 @@ initialize() {
 
 		// WRITE TXT FILE
 		file = paste0("Frequency_" + sim.cycle + "\n", asString(p1Counts) + "\n");
-		if (!writeFile("./slim/outputs/" + Seed + "-" + NTargets + "-" + Sep + "-" + "_Cycle_" + sim.cycle + ".txt", file))
+		if (!writeFile("../slim/outputs/" + Seed + "-" + NTargets + "-" + Sep + "-" + "_Cycle_" + sim.cycle + ".txt", file))
 			stop("Error writing file.");
 	}
 }
