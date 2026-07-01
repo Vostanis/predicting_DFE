@@ -1,0 +1,173 @@
+// Fitness Landscape
+
+initialize() {
+	// Calls
+	initializeSLiMOptions(keepPedigrees=T);
+	initializeSex("A");
+	
+	// Constants
+	if (!exists("Seed"))
+		defineConstant("Seed", 65755);
+	defineConstant("NTargets",   10000);
+	defineConstant("Sep",        0);
+	
+	// Genome elements
+	defineConstant("L", 23513712);
+	setSeed(asInteger(Seed));
+	initializeMutationRate(0);
+	
+	initializeMutationType("m1", 0.5, "f", 0.0);		// Will be changed to the coeficients afterwards
+	initializeMutationType("m2", 0.5, "f", 0.0);
+	m2.convertToSubstitution = F;
+	
+	initializeGenomicElementType("g1", m2, 1);
+	initializeGenomicElement(g1, 0, L);
+	
+	// Recombination map
+	map   = readCSV("0files/chr2L.txt", c("ends", "rates"), sep=",");
+	ends  = map.getValue("ends");
+	ends  = c(ends[1:(size(ends)-1)] - 2, L);
+	rates = map.getValue("rates") * 1e-8;
+	initializeRecombinationRate(rates, ends);
+}
+
+1 early() {
+	defineConstant("Final", "Test");
+	
+	// Subpopulations
+	sim.addSubpop("p0", 1000);
+	sim.addSubpop("p1", 1000);
+}
+
+1 late() {
+	
+	// SNP Positions
+	poly = readCSV("0files/df_AD_Targets.csv", c("pos_poly")).asMatrix();
+	targetPos = sort(sample(poly, asInteger(NTargets)));
+	
+	// Coeficients (same length as positions)
+	targets = readCSV("0files/targets.csv", c("pos_poly")).asMatrix();
+	defineConstant("SCoefList", targets);
+	
+	if (size(SCoefList) != asInteger(NTargets))
+		stop("Length of SCoefList must equal NTargets.");
+	
+	// [ MUTATIONS PLACEMENT ]
+	if (asInteger(NTargets) == 0)
+	{
+		file = "NTargets\n";
+	}
+	else
+	{
+		if (asInteger(Sep) == 0)
+		{
+			// All mutations in p1
+			muts = p1.genomes.addNewDrawnMutation(m1, targetPos);
+			
+			for (i in seqAlong(muts))
+				muts[i].setSelectionCoeff(SCoefList[i]);
+			
+			file = paste0("NTargets\n\n", asString(targetPos), "\n");
+		}
+		else if (asInteger(NTargets) == asInteger(Sep))
+		{
+			// All mutations in p0
+			muts = p0.genomes.addNewDrawnMutation(m1, targetPos);
+			
+			for (i in seqAlong(muts))
+				muts[i].setSelectionCoeff(SCoefList[i]);
+			
+			file = paste0("NTargets\n", asString(targetPos), "\n\n");
+		}
+		else
+		{
+			// Split mutations
+			p0_pos = targetPos[0:(asInteger(Sep)-1)];
+			p1_pos = targetPos[asInteger(Sep):(asInteger(NTargets)-1)];
+			
+			p0_coef = SCoefList[0:(asInteger(Sep)-1)];
+			p1_coef = SCoefList[asInteger(Sep):(asInteger(NTargets)-1)];
+			
+			muts0 = p0.genomes.addNewDrawnMutation(m1, p0_pos);
+			muts1 = p1.genomes.addNewDrawnMutation(m1, p1_pos);
+			
+			for (i in seqAlong(muts0))
+				muts0[i].setSelectionCoeff(p0_coef[i]);
+			
+			for (i in seqAlong(muts1))
+				muts1[i].setSelectionCoeff(p1_coef[i]);
+			
+			file = paste0("NTargets\n",
+				asString(p0_pos), "\n\n",
+				asString(p1_pos), "\n");
+		}
+	}
+	
+	// OUTPUT
+	outname = paste0("./", Seed, "-", NTargets, "-", Sep,
+		"_Targets.txt");
+	
+	if (!writeFile(outname, file))
+		stop("Error writing file.");
+}
+
+// Randomize sex rate
+1:3 early() {
+	p0.setSexRatio(runif(1, 0.45, 0.55));
+	p1.setSexRatio(runif(1, 0.45, 0.55));
+}
+
+4 late(){
+	// Add just 100 for test
+	muts = readCSV("0files/df_AD_Targets.csv", c("pos_poly")).asMatrix();
+	p1.genomes.addNewDrawnMutation(m2, muts[0:5000]);
+	p1.genomes.addNewDrawnMutation(m2, muts[5001:10000-1]);
+}
+
+9 early() {
+	sim.addSubpop("p10", 1500);
+	p10.setMigrationRates(c(p0, p1), c(0.7, 0.3));
+}
+
+// Admixture 210 cycles/generations
+10 early() {
+	p10.setMigrationRates(c(p0, p1), c(0.0, 0.0));
+	p10.setSexRatio(runif(1, 0.45, 0.55));
+	
+	// Remove haplotype Pops
+	p0.setSubpopulationSize(0);
+	p1.setSubpopulationSize(0);
+}
+
+
+// Randomize sex freqs
+10: late() {
+	p10.setSexRatio(runif(1, 0.45, 0.55));
+	
+	// Output 10:60:10 (Actually cycle x+10)
+	if (sim.cycle == 20 | sim.cycle == 30 | sim.cycle == 40 | sim.cycle == 50 | sim.cycle == 60 | sim.cycle == 70) {
+		
+		// Indiv and coverage samples
+		p10g = sample(p10.individuals,500).genomes;
+		
+		// Sites to check
+		muts = readCSV("0files/df_AD_Targets.csv", c( "pos_poly"));
+		p1Counts = integer(length(muts.getValue("pos_poly")));
+		for (g in p10g){
+			ind_list = match(g.positionsOfMutationsOfType(m2), muts.asMatrix());
+			p1Counts = p1Counts + integer(length(muts.getValue("pos_poly")), 0, 1, ind_list);
+		}
+		
+		// WRITE TXT FILE
+		file = paste0(  "Frequency_" + sim.cycle + "\n", asString( p1Counts ) + "\n"  ) ;
+		if (!writeFile("./" + Seed + "-" + NTargets + "-" + Sep + "-" + "_Cycle_" + sim.cycle + ".txt", file))
+			stop("Error writing file.");
+	}
+}
+
+
+
+// Save file and end
+100 early() {
+	sim.simulationFinished();
+}

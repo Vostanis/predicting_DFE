@@ -2,3 +2,4 @@ __pycache__/
 .ipynb_checkpoints/
 sample_data_500mb.sync
 chromosome_2L.sync
+slim/outputs/

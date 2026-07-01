@@ -61,7 +61,7 @@ initialize() {
 		stop("Length of targets must equal NTargets. Got " + size(SCoefList));
 		
 	// NEW: selected mutations start at low frequency
-	defineConstant("SelCopies", 70);   // try 1 first; if too weak, use 2
+	defineConstant("SelCopies", 500);   // try 1 first; if too weak, use 2
 
 	if (asInteger(NTargets) == 0)
 	{
@@ -127,7 +127,7 @@ initialize() {
 	}
 	
 	// OUTPUT
-	outname = paste0("../slim/tmp/", Seed, "-", NTargets, "-", Sep, "_Targets.txt");
+	outname = paste0("../slim/outputs/", Seed, "-", NTargets, "-", Sep, "_Targets.txt");
 	
 	if (!writeFile(outname, file))
 		stop("Error writing file.");
@@ -211,7 +211,7 @@ initialize() {
 
 		// WRITE TXT FILE
 		file = paste0("Frequency_" + sim.cycle + "\n", asString(p1Counts) + "\n");
-		if (!writeFile("../slim/tmp/" + Seed + "-" + NTargets + "-" + Sep + "-" + "_Cycle_" + sim.cycle + ".txt", file))
+		if (!writeFile("../slim/outputs/" + Seed + "-" + NTargets + "-" + Sep + "-" + "_Cycle_" + sim.cycle + ".txt", file))
 			stop("Error writing file.");
 	}
 }
