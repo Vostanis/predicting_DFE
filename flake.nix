@@ -27,7 +27,7 @@
                 tqdm
                 jupyterlab
                 ipykernel
-                plotext
+                statsmodels
               ]))
           ];
 

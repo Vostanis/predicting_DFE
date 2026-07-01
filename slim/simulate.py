@@ -19,7 +19,7 @@ def sampleAndSimulate(alpha, beta, num_genomes=2000, seed=42):
     # Find fitness coefficients that work
     print(f"Simulating alpha={alpha}, beta={beta} ...")
     result = subprocess.run(['time', 'slim', '-x', '../slim/simulate_one.slim'], capture_output=True, text=True)
-    # print(result.stdout)
+    print(result.stdout)
     if result.stderr:
         print("STDERR:\n", result.stderr)
 
@@ -51,8 +51,8 @@ def sampleAndSimulate(alpha, beta, num_genomes=2000, seed=42):
     return sim_df
 
 def main():
-    alphas = np.linspace(1, 36_000, 10)
-    betas = np.linspace(0.1, 1, 10)
+    alphas = np.linspace(0.1, 2, 20)
+    betas = np.linspace(0.1, 2, 10)
     for alpha in alphas:
         for beta in betas:
             sampleAndSimulate(alpha=alpha, beta=1/beta)
