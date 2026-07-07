@@ -47,6 +47,7 @@ initialize() {
 	targetPos = sort(sample(poly, asInteger(NTargets)));
 	
 	// Coeficients (same length as positions)
+//	targets = readCSV("./slim/inputs/slim/0files/targets.csv", c("pos_poly")).asMatrix();
 	targets = readCSV("./slim/inputs/gamma_distributed_sample.csv", c("pos_poly")).asMatrix();
 	defineConstant("SCoefList", targets);
 	
@@ -132,7 +133,7 @@ initialize() {
 
 // Admixture 210 cycles/generations
 10 early() {
-	p10.setMigrationRates(c(p0, p1), c(0.0, 0.0));
+	p10.setMigrationRates(c(p0, p1), c(0, 0));
 	p10.setSexRatio(runif(1, 0.45, 0.55));
 	
 	// Remove haplotype Pops
