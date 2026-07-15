@@ -13,9 +13,7 @@ print("This means we can bring in models from other directories (like ./models)"
 
 def sampleAndSimulate(alpha, beta, sampled_totals, seed=42):
     gamma_samples = np.random.default_rng(seed=seed).gamma(shape=alpha, scale=1/beta, size=10_000)
-    # s_samples = -gamma_samples / 1000
     s_samples = (gamma_samples - 1)/1000
-    # pd.DataFrame(s_samples).to_csv('../slim/inputs/gamma_distributed_sample.csv', index=False, header=False)
     pd.DataFrame(s_samples).to_csv(
         './slim/inputs/gamma_distributed_sample.csv', 
         index=False, 
@@ -29,9 +27,6 @@ def sampleAndSimulate(alpha, beta, sampled_totals, seed=42):
         capture_output=True, 
         text=True
     )
-    # print(result.stdout)
-    # if result.stderr:
-    #     print("STDERR:\n", result.stderr)
 
     print("Simulation complete - reading files ...")
     sim_df = pd.DataFrame()
@@ -181,8 +176,10 @@ def main():
 
     print("starting simulation")
     ranges = []
-    for i in range(1, 36_000+1):
-        X = np.linspace((0.975 * i), (1.025 * i), 10) # alpha/beta roughly between 0.95 & 1.05 for every iteration
+    # for i in range(1, 36_000+1):
+    # for i in range(86, 36_000+1): # start-stopping the process
+    for i in np.linspace(1000, 36000, 200): # start-stopping the process
+        X = np.linspace((0.975 * i), (1.025 * i), 3) # alpha/beta roughly between 0.95 & 1.05 for every iteration
         ranges.append(X)
 
     for range_i in ranges:

@@ -18,8 +18,10 @@
             (pkgs.python313.withPackages
               (ps: with ps; [
                 pandas
+                polars
                 numpy
                 seaborn
+                plotly
                 matplotlib
                 scikit-learn
                 torch
