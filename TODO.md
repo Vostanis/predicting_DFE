@@ -1,11 +1,17 @@
 ### Code
-- [ ] talk to Mahamadou about cluster
-  - [ ] "can I do a 2nd/3rd run later with different models?"
-  - [ ] "how to access?"
-  - [ ] "can i install packages? with nix, docker, etc.?"
+- [x] talk to Mahamadou about cluster
+  - [x] "how to access?"
+    - ssh; waiting for login details
+  - [x] "can i install packages? with nix, docker, etc.?"
+    - apptainer, screen (or tmux), conda
+
+- [ ] prepare for cluser
+  - 1. simulate dataset
+  - 2. "read simulated data and run conv2d"()
   
-- [ ] sim new data
-  - [ ] need caching strategy: sqlite or simple file
+- [ ] sim new data: RUNNING
+  - [x] need caching strategy: sqlite or simple file
+    - writes `progress.txt` as its running
 
 - [ ] detailed understanding of CNN2D
 

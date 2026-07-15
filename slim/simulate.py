@@ -169,24 +169,74 @@ def hypergeometric_sampling(N, freqs_T, S = None, seed = None):
     freqs_sampled_T = X / S
     return freqs_sampled_T
 
+# def main():
+#     print("reading original data")
+#     df = readAlleleFrequencyData()
+#     sampled_totals = simulateTotals(df)
+
+#     print("starting simulation")
+#     ranges = []
+#     # for i in range(1, 36_000+1):
+#     # for i in range(86, 36_000+1): # start-stopping the process
+#     for i in np.linspace(1000, 36000, 200): # start-stopping the process
+#         X = np.linspace((0.975 * i), (1.025 * i), 3) # alpha/beta roughly between 0.95 & 1.05 for every iteration
+#         ranges.append(X)
+
+#     for range_i in ranges:
+#         for alpha in range_i:
+#             for beta in range_i:
+#                 if 0.95 <= alpha / beta <= 1.05:
+#                     sampleAndSimulate(alpha=alpha, beta=beta, sampled_totals=sampled_totals)
+
 def main():
     print("reading original data")
     df = readAlleleFrequencyData()
     sampled_totals = simulateTotals(df)
 
     print("starting simulation")
-    ranges = []
-    # for i in range(1, 36_000+1):
-    # for i in range(86, 36_000+1): # start-stopping the process
-    for i in np.linspace(1000, 36000, 200): # start-stopping the process
-        X = np.linspace((0.975 * i), (1.025 * i), 3) # alpha/beta roughly between 0.95 & 1.05 for every iteration
-        ranges.append(X)
 
-    for range_i in ranges:
-        for alpha in range_i:
-            for beta in range_i:
+    ranges = []
+    for i in np.geomspace(1, 36000, 231):
+    #     # alpha/beta roughly between 0.95 & 1.05
+    #     # X = np.linspace(0.975 * i, 1.025 * i, 5)
+    #     X = np.runiform(0.975 * i, 1.025 * i, 1)
+    #     ranges.append(X)
+        low = 0.975 * i
+        high = 1.025 * i
+        alphas = np.random.uniform(low, high, 2)
+        betas = np.random.uniform(low, high, 2)
+        ranges.append((alphas, betas))
+
+    # -------------------------
+    # Resume from last progress
+    # -------------------------
+    checkpoint = Path("./slim/progress.txt")
+
+    if checkpoint.exists():
+        start = int(checkpoint.read_text())
+        print(f"Resuming from outer loop {start}/{len(ranges)}")
+    else:
+        start = 0
+
+    # for idx, range_i in enumerate(ranges[start:], start=start):
+    #     print(f"Processing range {idx + 1}/{len(ranges)}")
+    for idx, (alphas, betas) in enumerate(ranges[start:], start=start):
+        for alpha in alphas:
+            for beta in betas:
                 if 0.95 <= alpha / beta <= 1.05:
-                    sampleAndSimulate(alpha=alpha, beta=beta, sampled_totals=sampled_totals)
+                    sampleAndSimulate(
+                        alpha=alpha,
+                        beta=beta,
+                        sampled_totals=sampled_totals,
+                    )
+
+        # Save progress after finishing this range
+        checkpoint.write_text(str(idx + 1))
+
+    print("Simulation complete!")
+
+    # Optional: remove checkpoint when everything finishes
+    checkpoint.unlink(missing_ok=True)
 
 if __name__ == "__main__":
     main()
